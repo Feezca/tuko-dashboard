@@ -1,11 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LogIn } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "../../../components/ui/button"; // Import the authLogin service
+import { Button } from "../../../components/ui/button";
 
-import { useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -22,80 +20,65 @@ import {
 } from "../../../components/ui/form";
 import { Input } from "../../../components/ui/input";
 import { useToast } from "../../../hooks/use-toast";
-import { AuthenticationContext } from "../../../lib/services/authenticationContext/authentication.context";
-import { AuthLogin } from "../lib/services/action";
+import { AuthRegister } from "../lib/services/action";
 
-const loginSchema = z.object({
+const registerSchema = z.object({
   username: z.string().min(2, {
     message: "El nombre de usuario debe contener al menos 2 caracteres.",
   }),
   password: z
     .string()
     .min(6, "El password debe contener al menos 6 caracteres."),
+  email: z.string().email(),
 });
 
-type LoginForm = z.infer<typeof loginSchema>;
+type RegisterForm = z.infer<typeof registerSchema>;
 
-const Login = ({ isChange }: { isChange: () => void }) => {
-  const navigate = useNavigate();
-  const authContext = useContext(AuthenticationContext);
-  const handleLogin = authContext?.handleLogin;
-
+const Register = ({ isChange }: { isChange: () => void }) => {
   const { toast } = useToast();
 
-  const form = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
       username: "",
       password: "",
+      email: "",
     },
   });
 
-  const onSubmit = async (data: LoginForm) => {
+  const onSubmit = async (data: RegisterForm) => {
     try {
-      console.log(data);
-      const result = await AuthLogin(data);
+      const result = await AuthRegister(data);
 
-      handleLogin?.(result);
       if (result) {
-        console.log("Logueado con éxito", result);
         toast({
           variant: "success",
-          title: "Logueo exitoso",
-          description: "Seras redirigido al dashboard",
+          title: "Registro exitoso",
+          description: "Seras redirigido al login para iniciar sesión",
         });
         setTimeout(() => {
-          navigate("/dashboard");
+          window.location.reload();
         }, 2000);
       }
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error al loguearse",
+        title: "Error al registrarse",
         description: "Por favor, verifica tus credenciales.",
         status: "error",
       });
-      console.log("Error al loguearse", error);
+      console.log("Error al registrar usuario", error);
     }
   };
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      navigate("/dashboard");
-    }
-  }, [navigate]);
 
   return (
     <div className="w-96">
       <Card className="w-full">
         <div className="flex mx-auto justify-center items-center mt-4 border-2 rounded-lg size-12">
-          <LogIn />
+          <UserPlus />
         </div>
         <CardHeader>
-          <CardTitle className="text-2xl text-center">
-            Inicio de sesión
-          </CardTitle>
+          <CardTitle className="text-2xl text-center">Registro</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -108,6 +91,19 @@ const Login = ({ isChange }: { isChange: () => void }) => {
                     <FormLabel>Nombre de usuario</FormLabel>
                     <FormControl>
                       <Input placeholder="johnDoe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="mail@mail.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -128,10 +124,10 @@ const Login = ({ isChange }: { isChange: () => void }) => {
               />
               <div className="grid space-y-3">
                 <Button className="w-full" type="submit">
-                  Ingresar
+                  Registrarme
                 </Button>
                 <Button variant="link" onClick={isChange}>
-                  Si no tienes cuenta, regístrate.
+                  Si ya tienes cuenta, inicia sesión.
                 </Button>
               </div>
             </form>
@@ -142,4 +138,4 @@ const Login = ({ isChange }: { isChange: () => void }) => {
   );
 };
 
-export default Login;
+export default Register;
